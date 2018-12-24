@@ -117,7 +117,8 @@ public class GeografijaDAO {
 
     public Grad glavniGrad (String drzava) {
         try {
-            query = conn.prepareStatement("SELECT g.id, g.naziv, g.brojStanovnika, d.id, d.naziv FROM grad g, drzava d WHERE d.glavni_grad = g.id AND d.naziv = "+ drzava);
+            query = conn.prepareStatement("SELECT g.id, g.naziv, g.brojStanovnika, d.id, d.naziv FROM grad g, drzava d WHERE d.glavni_grad = g.id AND d.naziv = ?");
+            query.setString(1,drzava);
             ResultSet result = query.executeQuery();
             Grad grad = new Grad();
             Drzava nadjenaDrzava = new Drzava();
@@ -173,7 +174,8 @@ public class GeografijaDAO {
     public Drzava nadjiDrzavu(String nazivDrzave) {
         Drzava trazenaDrzava = new Drzava();
         try {
-            query = conn.prepareStatement("SELECT G.id, G.naziv, G.brojStanovnika, D.id, D.naziv FROM grad G, drzava D WHERE  G.id = D.glavni_grad  AND D.naziv = " + nazivDrzave);
+            query = conn.prepareStatement("SELECT G.id, G.naziv, G.brojStanovnika, D.id, D.naziv FROM grad G, drzava D WHERE  G.id = D.glavni_grad  AND D.naziv = ?" );
+            query.setString(1,nazivDrzave);
             ResultSet result = query.executeQuery();
             Grad glavniGrad = new Grad();
             trazenaDrzava.setGrad(glavniGrad);
@@ -364,21 +366,19 @@ public class GeografijaDAO {
     }
 
     private void dodajPodatke(){
-        gradovi.add( new Grad(1,"Moscow",3500000, null ));
-        gradovi.add( new Grad(2,"Paris",1000000, null ));
-        gradovi.add( new Grad(3,"Istanbul",2400000, null ));
-        gradovi.add( new Grad(4,"Madrid",3000000, null ));
-        gradovi.add( new Grad(5,"Wien",1500000, null ));
-        drzave.add( new Drzava( 1, "Russia", gradovi.get(0) ));
-        drzave.add( new Drzava( 2, "France", gradovi.get(1) ));
-        drzave.add( new Drzava( 3, "Turkey", gradovi.get(2) ));
-        drzave.add( new Drzava( 4, "Spain", gradovi.get(3) ));
-        drzave.add( new Drzava( 5, "Austria", gradovi.get(4) ));
+        gradovi.add( new Grad(1,"London",3500000, null ));
+        gradovi.add( new Grad(2,"Pariz",1000000, null ));
+        gradovi.add( new Grad(3,"Beč",2400000, null ));
+        gradovi.add( new Grad(4,"Manchester",3000000, null ));
+        gradovi.add( new Grad(5,"Graz",1500000, null ));
+        drzave.add( new Drzava( 1, "Engleska", gradovi.get(0) ));
+        drzave.add( new Drzava( 2, "Francuska", gradovi.get(1) ));
+        drzave.add( new Drzava( 3, "Austrija", gradovi.get(2) ));
         gradovi.get(0).setDrzava(drzave.get(0));
         gradovi.get(1).setDrzava(drzave.get(1));
         gradovi.get(2).setDrzava(drzave.get(2));
-        gradovi.get(3).setDrzava(drzave.get(3));
-        gradovi.get(4).setDrzava(drzave.get(4));
+        gradovi.get(3).setDrzava(drzave.get(0));
+        gradovi.get(4).setDrzava(drzave.get(2));
     }
 
 
