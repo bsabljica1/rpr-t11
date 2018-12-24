@@ -28,9 +28,9 @@ public class Main {
         dao.obrisiDrzavu("Austrija");
         ArrayList<Grad> gradovi = dao.gradovi();
       if  (gradovi.size()==3) System.out.println("dobro");
-      else System.out.println(gradovi.size());
-       // ("London", gradovi.get(0).getNaziv());
-       // ("Pariz", gradovi.get(1).getNaziv());
-       // ("Manchester", gradovi.get(2).getNaziv());
+       if  (gradovi.get(0).getNaziv().equals("London")) System.out.println("dobro");
+       if  (gradovi.get(1).getNaziv().equals("Pariz")) System.out.println("dobro");
+       if  (gradovi.get(2).getNaziv().equals("Manchester")) System.out.println("dobro");
+
     }
 }

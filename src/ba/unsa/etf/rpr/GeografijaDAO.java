@@ -366,16 +366,16 @@ public class GeografijaDAO {
     }
 
     private void dodajPodatke(){
-        gradovi.add( new Grad(1,"London",3500000, null ));
-        gradovi.add( new Grad(2,"Pariz",1000000, null ));
+        gradovi.add( new Grad(1,"Pariz",3500000, null ));
+        gradovi.add( new Grad(2,"London",1000000, null ));
         gradovi.add( new Grad(3,"Beč",2400000, null ));
         gradovi.add( new Grad(4,"Manchester",3000000, null ));
         gradovi.add( new Grad(5,"Graz",1500000, null ));
-        drzave.add( new Drzava( 1, "Engleska", gradovi.get(0) ));
-        drzave.add( new Drzava( 2, "Francuska", gradovi.get(1) ));
+        drzave.add( new Drzava( 1, "Engleska", gradovi.get(1) ));
+        drzave.add( new Drzava( 2, "Francuska", gradovi.get(0) ));
         drzave.add( new Drzava( 3, "Austrija", gradovi.get(2) ));
-        gradovi.get(0).setDrzava(drzave.get(0));
-        gradovi.get(1).setDrzava(drzave.get(1));
+        gradovi.get(0).setDrzava(drzave.get(1));
+        gradovi.get(1).setDrzava(drzave.get(0));
         gradovi.get(2).setDrzava(drzave.get(2));
         gradovi.get(3).setDrzava(drzave.get(0));
         gradovi.get(4).setDrzava(drzave.get(2));
