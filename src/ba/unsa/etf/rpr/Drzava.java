@@ -5,6 +5,8 @@ public class Drzava {
     private String naziv;
     Grad glavniGrad;
 
+    public Drzava() {}
+
     public Drzava (int id, String naziv, Grad glavniGrad) {
         this.id=id;
         this.glavniGrad=glavniGrad;
