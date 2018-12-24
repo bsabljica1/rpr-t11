@@ -3,13 +3,13 @@ package ba.unsa.etf.rpr;
 public class Drzava {
     private int id;
     private String naziv;
-    Grad glavniGrad;
+    Grad grad;
 
     public Drzava() {}
 
-    public Drzava (int id, String naziv, Grad glavniGrad) {
+    public Drzava (int id, String naziv, Grad grad) {
         this.id=id;
-        this.glavniGrad=glavniGrad;
+        this.grad=grad;
         this.naziv=naziv;
     }
 
@@ -29,12 +29,12 @@ public class Drzava {
         return id;
     }
 
-    public void setGlavniGrad(Grad glavniGrad) {
-        this.glavniGrad = glavniGrad;
+    public void setGrad(Grad grad) {
+        this.grad = grad;
     }
 
-    public Grad getGlavniGrad() {
-        return glavniGrad;
+    public Grad getGrad() {
+        return grad;
     }
 
     @Override

@@ -4,7 +4,7 @@ public class Grad {
     private int id;
     private String naziv;
     private int brojStanovnika;
-    private Drzava drzava;
+    Drzava drzava;
 
     public Grad() {}
 
