@@ -49,6 +49,6 @@ public class Grad {
 
     @Override
     public String toString() {
-        return super.toString();
+        return getNaziv() + " (" + getDrzava().getNaziv() + ")" + " - " + getBrojStanovnika();
     }
 }

@@ -91,7 +91,7 @@ class GeografijaDAOTest {
         sarajevo.setBrojStanovnika(500000);
         Drzava bih = new Drzava();
         bih.setNaziv("Bosna i Hercegovina");
-        bih.setGrad(sarajevo);
+        bih.setGlavniGrad(sarajevo);
         sarajevo.setDrzava(bih);
 
         GeografijaDAO dao = GeografijaDAO.getInstance();

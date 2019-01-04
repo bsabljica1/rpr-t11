@@ -29,11 +29,11 @@ public class Drzava {
         return id;
     }
 
-    public void setGrad(Grad grad) {
+    public void setGlavniGrad(Grad grad) {
         this.grad = grad;
     }
 
-    public Grad getGrad() {
+    public Grad getGlavniGrad() {
         return grad;
     }
 

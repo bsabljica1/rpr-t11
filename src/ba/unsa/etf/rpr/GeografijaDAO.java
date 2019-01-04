@@ -1,385 +1,381 @@
 package ba.unsa.etf.rpr;
 
-import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 
 public class GeografijaDAO {
-    private static GeografijaDAO instance=null;
+    private static GeografijaDAO instance = null;
     private Connection conn;
-    private PreparedStatement query;
-    private ArrayList<Grad> gradovi = new ArrayList<>();
-    private ArrayList<Drzava> drzave = new ArrayList<>();
-
-    private GeografijaDAO(){
-        try{
-            String url = "jdbc:sqlite:baza.db";
-            conn = DriverManager.getConnection(url);
-            query = conn.prepareStatement("DELETE FROM grad");
-            query.executeUpdate();
-            query = conn.prepareStatement("DELETE FROM drzava");
-            query.executeUpdate();
-            dodajPodatke();
-            for(int i = 0; i < drzave.size(); i++){
-                try {
-                    query = conn.prepareStatement("INSERT INTO drzava VALUES (?,?,?)");
-                    query.setInt(1, drzave.get(i).getId());
-                    query.setString(2, drzave.get(i).getNaziv());
-                    query.setInt(3, drzave.get(i).getGrad().getId());
-                    query.executeUpdate();
-                }catch (Exception e1){
-                    System.out.println("Greska: " + e1);
-                }
-            }
-            for(int i = 0; i < gradovi.size(); i++){
-                try {
-                    query = conn.prepareStatement("INSERT INTO grad VALUES (?,?,?,null)");
-                    query.setInt(1, gradovi.get(i).getId());
-                    query.setString(2, gradovi.get(i).getNaziv());
-                    query.setInt(3, gradovi.get(i).getBrojStanovnika());
-                    query.executeUpdate();
-                }catch (Exception e1){
-                    System.out.println("Greska: " + e1);
-                }
-            }
-            for(int i = 0; i < gradovi.size(); i++){
-                try {
-                    query = conn.prepareStatement("UPDATE grad SET drzava = ? WHERE id = ?");
-                    query.setInt(1, gradovi.get(i).getDrzava().getId());
-                    query.setInt(2, gradovi.get(i).getId());
-                    query.executeUpdate();
-                }catch (Exception e1){
-                    System.out.println("Greska: " + e1);
-                }
-            }
-        }
-        catch (Exception e){
-            try{
-                query = conn.prepareStatement("CREATE TABLE grad(" +
-                        "id INT PRIMARY KEY, naziv TEXT, brojStanovnika INT)");
-                query.executeUpdate();
-                query = conn.prepareStatement("CREATE TABLE drzava(" +
-                        "id INT PRIMARY KEY, naziv TEXT,glavni_grad INT)");
-                query.executeUpdate();
-                query = conn.prepareStatement("ALTER TABLE grad " +
-                        "ADD COLUMN drzava int references drzava(id)");
-                query.executeUpdate();
-                for(int i = 0; i < drzave.size(); i++){
-                    try {
-                        query = conn.prepareStatement("INSERT INTO drzava VALUES (?,?,?)");
-                        query.setInt(1, drzave.get(i).getId());
-                        query.setString(2, drzave.get(i).getNaziv());
-                        query.setInt(3, drzave.get(i).getGrad().getId());
-                        query.executeUpdate();
-                    }catch (Exception e1) {
-                        System.out.println("Greska: " + e1);
-                    }
-                }
-                for(int i = 0; i < gradovi.size(); i++){
-                    try {
-                        query = conn.prepareStatement("INSERT INTO grad VALUES (?,?,?,null)");
-                        query.setInt(1, gradovi.get(i).getId());
-                        query.setString(2, gradovi.get(i).getNaziv());
-                        query.setInt(3, gradovi.get(i).getBrojStanovnika());
-                        query.executeUpdate();
-                    }catch (Exception e1){
-                        System.out.println("Greska: " + e1);
-                    }
-                }
-                for(int i = 0; i < gradovi.size(); i++){
-                    try {
-                        query = conn.prepareStatement("UPDATE grad SET drzava = ? WHERE id = ?");
-                        query.setInt(1, gradovi.get(i).getDrzava().getId());
-                        query.setInt(2, gradovi.get(i).getId());
-                        query.executeUpdate();
-                    }catch (Exception e1){
-                        System.out.println("Greska: " + e1);
-                    }
-                }
-            }catch (Exception e1){
-                e1.printStackTrace();
-            }
-        }
-    }
+    private PreparedStatement upit;
 
     private static void initialize() {
         instance = new GeografijaDAO();
     }
 
-    public static GeografijaDAO getInstance() {
-            initialize();
-        return instance;
+    private void napuniPodacima(ArrayList<Grad> gradovi,ArrayList<Drzava> drzave) {
+        gradovi.add(new Grad(1, "Pariz", 2206488, null));
+        gradovi.add(new Grad(2, "London", 8825000, null));
+        gradovi.add(new Grad(3, "Beč", 1899055, null));
+        gradovi.add(new Grad(4, "Manchester", 545500, null));
+        gradovi.add(new Grad(5, "Graz", 280200, null));
+        drzave.add(new Drzava(1, "Francuska", gradovi.get(0)));
+        drzave.add(new Drzava(2, "Velika Britanija", gradovi.get(1)));
+        drzave.add(new Drzava(3, "Austrija", gradovi.get(2)));
+        gradovi.get(0).setDrzava(drzave.get(0));
+        gradovi.get(1).setDrzava(drzave.get(1));
+        gradovi.get(2).setDrzava(drzave.get(2));
+        gradovi.get(3).setDrzava(drzave.get(1));
+        gradovi.get(4).setDrzava(drzave.get(2));
+    }
+
+    private GeografijaDAO() {
+        ArrayList<Grad> gradovi = new ArrayList<>();
+        ArrayList<Drzava> drzave = new ArrayList<>();
+        napuniPodacima(gradovi, drzave);
+        try {
+            String url = "jdbc:sqlite:baza.db";
+            conn = DriverManager.getConnection(url);
+            boolean gradTabelaPostoji = true;
+            try {
+                upit = conn.prepareStatement("DELETE FROM grad");
+                upit.executeUpdate();
+            } catch (Exception ignored) {
+                upit = conn.prepareStatement("create table grad (id int constraint grad_id_pk primary key, naziv varchar(50), broj_stanovnika int, drzava int)");
+                upit.executeUpdate();
+                gradTabelaPostoji = false;
+                upit = conn.prepareStatement("create table drzava (id int constraint drzava_id_pk primary key, naziv varchar(50), glavni_grad int constraint gl_grad_fk references grad(id) on delete cascade)");
+                upit.executeUpdate();
+                if (!gradTabelaPostoji) {
+                    upit = conn.prepareStatement("alter table grad add constraint drzava_fk foreign key (drzava) references drzava(id) on delete cascade");
+                    upit.executeUpdate();
+                }
+            }
+            upit = conn.prepareStatement("INSERT INTO grad VALUES (?, ?, ?, NULL)");
+            for (var grad : gradovi) {
+                try {
+                    upit.setInt(1, grad.getId());
+                    upit.setString(2, grad.getNaziv());
+                    upit.setInt(3, grad.getBrojStanovnika());
+                    upit.executeUpdate();
+                } catch (SQLException ignored) {
+                }
+            }
+            upit = conn.prepareStatement("INSERT  INTO drzava VALUES(?, ?, ?)");
+            for (var drzava : drzave) {
+                try {
+                    upit.setInt(1, drzava.getId());
+                    upit.setString(2, drzava.getNaziv());
+                    upit.setInt(3, drzava.getGlavniGrad().getId());
+                    upit.executeUpdate();
+                } catch (SQLException ignored) {
+                }
+            }
+            upit = conn.prepareStatement("UPDATE grad SET drzava = ? WHERE id = ?");
+            for (var grad : gradovi) {
+                try {
+                    upit.setInt(1, grad.getDrzava().getId());
+                    upit.setInt(2, grad.getId());
+                    upit.executeUpdate();
+                } catch (SQLException ignored) {
+                }
+            }
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
+        }
     }
 
     public static void removeInstance() {
         instance = null;
     }
 
-    public Grad glavniGrad (String drzava) {
-        try {
-            query = conn.prepareStatement("SELECT g.id, g.naziv, g.brojStanovnika, d.id, d.naziv FROM grad g, drzava d WHERE d.glavni_grad = g.id AND d.naziv = "+ drzava);
-            ResultSet result = query.executeQuery();
-            Grad grad = new Grad();
-            Drzava nadjenaDrzava = new Drzava();
-            grad.setDrzava(nadjenaDrzava);
-            nadjenaDrzava.setGrad(grad);
-            boolean imaDrzave = false;
-            while (result.next()) {
-                imaDrzave = true;
-                int idGrada = result.getInt(1);
-                String nazivGrada = result.getString(2);
-                int brojStanovnika = result.getInt(3);
-                int idDrzave = result.getInt(4);
-                String nazivDrzave = result.getString(5);
-                grad.setId(idGrada);
-                grad.setNaziv(nazivGrada);
-                grad.setBrojStanovnika(brojStanovnika);
-                nadjenaDrzava.setId(idDrzave);
-                nadjenaDrzava.setNaziv(nazivDrzave);
-            }
-            if (imaDrzave) {
-                return grad;
-            }
-        } catch (SQLException e) {
-        }
-        return null;
+    public static GeografijaDAO getInstance() {
+        if (instance == null) initialize();
+        return instance;
     }
 
     public void obrisiDrzavu(String drzava) {
         try {
-            int idDrzave = 0;
-            query = conn.prepareStatement("SELECT id FROM drzava WHERE naziv = ?");
-            query.setString(1, drzava);
-            ResultSet result = query.executeQuery();
-            boolean imaDrzave = false;
+            upit = conn.prepareStatement("SELECT g.id FROM grad g, drzava d WHERE g.drzava = d.id AND d.naziv = ?");
+            upit.setString(1, drzava);
+            ResultSet result = upit.executeQuery();
+            boolean postoji = false;
             while (result.next()) {
-                imaDrzave = true;
-                idDrzave = result.getInt(1);
+                int idGrad = result.getInt(1);
+                PreparedStatement podUpit = conn.prepareStatement("DELETE FROM grad WHERE id = ?");
+                podUpit.setInt(1, idGrad);
+                podUpit.executeUpdate();
+                postoji=true;
             }
-            if (!imaDrzave) return;
-            query = conn.prepareStatement("DELETE FROM grad WHERE drzava=?");
-            query.setInt(1, idDrzave);
-            query.execute();
-            query= conn.prepareStatement("DELETE FROM drzava WHERE id=?");
-            query.setInt(1, idDrzave);
-            query.execute();
-        } catch (SQLException ignored) {
-            System.out.println("Ne postoji drzava!");
+            if (postoji == false)
+                return;
+            upit = conn.prepareStatement("DELETE FROM drzava WHERE naziv = ?");
+            upit.setString(1, drzava);
+            upit.executeUpdate();
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
         }
     }
 
 
-
-    public Drzava nadjiDrzavu(String nazivDrzave) {
-        Drzava trazenaDrzava = new Drzava();
+    public void obrisiGrad(String grad) {
         try {
-            query = conn.prepareStatement("SELECT G.id, G.naziv, G.brojStanovnika, D.id, D.naziv FROM grad G, drzava D WHERE  G.id = D.glavni_grad  AND D.naziv = " + nazivDrzave);
-            ResultSet result = query.executeQuery();
-            Grad glavniGrad = new Grad();
-            trazenaDrzava.setGrad(glavniGrad);
-            glavniGrad.setDrzava(trazenaDrzava);
+            upit = conn.prepareStatement("SELECT d.id FROM grad g, drzava d WHERE d.glavni_grad = g.id AND g.naziv = ?");
+            upit.setString(1, grad);
+            ResultSet result = upit.executeQuery();
+            boolean postoji=false;
             while (result.next()) {
-                int drzavaId = result.getInt(1);
-                trazenaDrzava.setId(drzavaId);
-                String drzavaNaziv = result.getString(2);
-                trazenaDrzava.setNaziv(drzavaNaziv);
-                int gradId = result.getInt(3);
-                glavniGrad.setId(gradId);
-                String gradNaziv = result.getString(4);
-                glavniGrad.setNaziv(gradNaziv);
-                int gradBrojStanovnika = result.getInt(5);
-                glavniGrad.setBrojStanovnika(gradBrojStanovnika);
+                int idDrzava = result.getInt(1);
+                PreparedStatement podUpit = conn.prepareStatement("DELETE FROM drzava WHERE id = ?");
+                podUpit.setInt(1, idDrzava);
+                podUpit.executeUpdate();
+                postoji=true;
             }
-            result.close();
-        } catch (SQLException ignored) {
-            System.out.println("Data drzava ne postoji");
+            if (postoji == false)
+                return;
+            upit = conn.prepareStatement("DELETE FROM grad WHERE naziv = ?");
+            upit.setString(1, grad);
+            upit.executeUpdate();
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
+        }
+    }
+
+    public ArrayList<Grad> gradovi() {
+        ArrayList<Grad> gradovi = new ArrayList<>();
+        try {
+            upit = conn.prepareStatement("SELECT * FROM grad ORDER BY broj_stanovnika DESC");
+            ResultSet resultGradovi = upit.executeQuery();
+            while (resultGradovi.next()) {
+                Grad grad = new Grad();
+                int idGrad = resultGradovi.getInt(1);
+                grad.setId(idGrad);
+                String nazivGrad = resultGradovi.getString(2);
+                grad.setNaziv(nazivGrad);
+                int brojStanovnika = resultGradovi.getInt(3);
+                grad.setBrojStanovnika(brojStanovnika);
+                int drzavaId = resultGradovi.getInt(4);
+                grad.setDrzava(new Drzava(drzavaId, "", null));
+                gradovi.add(grad);
+            }
+            upit = conn.prepareStatement("SELECT * FROM drzava");
+            ResultSet resultDrzave = upit.executeQuery();
+            while (resultDrzave.next()) {
+                Drzava drzava = new Drzava();
+                int idDrzava = resultDrzave.getInt(1);
+                drzava.setId(idDrzava);
+                String nazivDrzave = resultDrzave.getString(2);
+                drzava.setNaziv(nazivDrzave);
+                int glavniGradId = resultDrzave.getInt(3);
+                for (var grad : gradovi) {
+                    if (grad.getDrzava().getId() == drzava.getId()) {
+                        grad.setDrzava(drzava);
+                    }
+                    if (glavniGradId == grad.getId())
+                        drzava.setGlavniGrad(grad);
+                }
+            }
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
+        }
+        return gradovi;
+    }
+
+    public Grad glavniGrad(String drzava) {
+        Grad grad = new Grad();
+        try {
+            upit = conn.prepareStatement("SELECT g.id, g.naziv, g.broj_stanovnika, d.id, d.naziv FROM grad g, drzava d WHERE d.glavni_grad = g.id AND d.naziv = ?");
+            upit.setString(1, drzava);
+            ResultSet result = upit.executeQuery();
+            Drzava drzavaFk = new Drzava();
+            grad.setDrzava(drzavaFk);
+            drzavaFk.setGlavniGrad(grad);
+            boolean postoji=false;
+            while (result.next()) {
+                int idGrad = result.getInt(1);
+                grad.setId(idGrad);
+                String nazivGrad = result.getString(2);
+                grad.setNaziv(nazivGrad);
+                int brojStanovnika = result.getInt(3);
+                grad.setBrojStanovnika(brojStanovnika);
+                int idDrzava = result.getInt(4);
+                drzavaFk.setId(idDrzava);
+                String nazivDrzave = result.getString(5);
+                drzavaFk.setNaziv(nazivDrzave);
+                postoji=true;
+            }
+            if (postoji==false) {
+                System.out.println("Data drzava ne postoji");
+                return null;
+            }
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
+        }
+        return grad;
+    }
+
+    public Drzava nadjiDrzavu(String drzava) {
+        Drzava drzavaResult = new Drzava();
+        try {
+            upit = conn.prepareStatement("SELECT d.id, d.naziv, g.id, g.naziv, g.broj_stanovnika FROM drzava d, grad g WHERE d.glavni_grad = g.id AND d.naziv = ?");
+            upit.setString(1, drzava);
+            ResultSet result = upit.executeQuery();
+            Grad glavniGrad = new Grad();
+            drzavaResult.setGlavniGrad(glavniGrad);
+            glavniGrad.setDrzava(drzavaResult);
+            while (result.next()) {
+                int idDrzava = result.getInt(1);
+                drzavaResult.setId(idDrzava);
+                String nazivDrzave = result.getString(2);
+                drzavaResult.setNaziv(nazivDrzave);
+                int idGrad = result.getInt(3);
+                glavniGrad.setId(idGrad);
+                String nazivGrad = result.getString(4);
+                glavniGrad.setNaziv(nazivGrad);
+                int brojStanovnika = result.getInt(5);
+                glavniGrad.setBrojStanovnika(brojStanovnika);
+            }
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
             return null;
         }
-        return trazenaDrzava;
+        return drzavaResult;
     }
 
-    public void izmijeniGrad( Grad g ) {
+    private int dajSljedeciID(String nazivTabele) throws SQLException {
+        upit = conn.prepareStatement("SELECT id FROM " + nazivTabele + " WHERE ROWNUM = 1 ORDER BY id DESC");
+        var result = upit.executeQuery();
+        int id = 0;
+        while (result.next())
+            id = result.getInt(1);
+        return id + 1;
+    }
 
-        try {
-            query = conn.prepareStatement("UPDATE grad SET naziv = ?, brojStanovnika = ?, drzava = ? WHERE id = ?");
-            query.setString(1, g.getNaziv() );
-            query.setInt(2, g.getBrojStanovnika() );
-            query.setInt(3, g.getDrzava().getId() );
-            query.setInt(4, g.getId() );
-            int redniBrojReda = query.executeUpdate();
-            System.out.println( "Uspjesno izmjenjen " +  redniBrojReda + " red" );
-        } catch (SQLException ignored) {
-            System.out.println( "Dati grad ne postoji" );
-        }
+    private int dajGradIDAkoPostoji(String naziv) throws SQLException {
+        upit = conn.prepareStatement("SELECT id FROM grad WHERE naziv = ? AND broj_stanovnika IS NULL");
+        upit.setString(1, naziv);
+        var result = upit.executeQuery();
+        int id = -1;
+        while (result.next())
+            id = result.getInt(1);
+        return id;
     }
 
     public void dodajGrad(Grad grad) {
         try {
-            int idAP = -1;
-            query = conn.prepareStatement("SELECT id FROM grad WHERE brojStanovnika IS NULL AND naziv = ? ");
-            query.setString(1, grad.getNaziv());
-            ResultSet result = query.executeQuery();
-            while ( result.next() )
-                idAP = result.getInt(1);
-            if (idAP != -1) {
-                grad.setId(idAP);
-                query = conn.prepareStatement("SELECT id FROM drzava WHERE glavni_grad = ?");
-                query.setInt(1, idAP);
-                ResultSet resultOne = query.executeQuery();
+            int idAkoPostoji = dajGradIDAkoPostoji(grad.getNaziv());
+            if (idAkoPostoji != -1) {
+                grad.setId(idAkoPostoji);
+                upit = conn.prepareStatement("SELECT id FROM drzava WHERE glavni_grad = ?");
+                upit.setInt(1, idAkoPostoji);
+                var result = upit.executeQuery();
                 int id = -1;
-                while (resultOne.next())
-                    id = resultOne.getInt(1);
-                Drzava tempState = new Drzava();
-                tempState.setId( id );
-                grad.setDrzava( tempState) ;
-                izmijeniGrad( grad );
-                resultOne.close();
+                while (result.next())
+                    id = result.getInt(1);
+                Drzava temp = new Drzava();
+                temp.setId(id);
+                grad.setDrzava(temp);
+                izmijeniGrad(grad);
                 return;
             }
-            query = conn.prepareStatement("SELECT id FROM drzava WHERE naziv = ?");
-            query.setString(1, grad.getDrzava().getNaziv());
-            ResultSet resultTwo = query.executeQuery();
-            int stateCounter = 0;
+            upit = conn.prepareStatement("SELECT id FROM drzava WHERE naziv = ?");
+            upit.setString(1, grad.getDrzava().getNaziv());
+            ResultSet result = upit.executeQuery();
+            int brojac = 0;
             int idDrzave = 0;
-            while (resultTwo.next()) {
-                idDrzave = resultTwo.getInt(1);
-                stateCounter++;
+            while (result.next()) {
+                idDrzave = result.getInt(1);
+                brojac++;
             }
-            int sljedeciIDGrad = 0;
-            query = conn.prepareStatement("SELECT id FROM grad ORDER BY id DESC LIMIT 1");
-            ResultSet tempResult = query.executeQuery();
-            while (tempResult.next())
-                sljedeciIDGrad = tempResult.getInt(1);
-            sljedeciIDGrad++;
-            query = conn.prepareStatement("INSERT INTO grad VALUES (?, ?, ?, ?)");
-            query.setInt(1, sljedeciIDGrad);
-            query.setString(2, grad.getNaziv());
-            query.setInt(3, grad.getBrojStanovnika());
-            if (stateCounter == 0)
-                query.setNull(4, Types.INTEGER);
+            int sljedeciIDGrad = dajSljedeciID("grad");
+            upit = conn.prepareStatement("INSERT INTO grad VALUES (?, ?, ?, ?)");
+            upit.setInt(1, sljedeciIDGrad);
+            upit.setString(2, grad.getNaziv());
+            upit.setInt(3, grad.getBrojStanovnika());
+            if (brojac == 0)
+                upit.setNull(4, Types.INTEGER);
             else
-                query.setInt(4, idDrzave);
-            query.executeUpdate();
-            if ( stateCounter == 0) {
-                int sljedeciIDDrzava = 0;
-                query = conn.prepareStatement("SELECT id FROM drzava ORDER BY id DESC LIMIT 1");
-                ResultSet tempResultTwo = query.executeQuery();
-                while (tempResultTwo.next())
-                    sljedeciIDDrzava = tempResultTwo.getInt(1);
-                sljedeciIDDrzava++;
-                query = conn.prepareStatement("INSERT INTO drzava VALUES (?, ?, ?)");
-                query.setInt(1, sljedeciIDDrzava);
-                query.setString(2, grad.getDrzava().getNaziv());
-                query.setInt(3, sljedeciIDGrad);
-                query.executeUpdate();
+                upit.setInt(4, idDrzave);
+            upit.executeUpdate();
+            if (brojac == 0) {
+                int sljedeciIDDrzava = dajSljedeciID("drzava");
+                upit = conn.prepareStatement("INSERT INTO drzava VALUES (?, ?, ?)");
+                upit.setInt(1, sljedeciIDDrzava);
+                upit.setString(2, grad.getDrzava().getNaziv());
+                upit.setInt(3, sljedeciIDGrad);
+                upit.executeUpdate();
+                upit = conn.prepareStatement("UPDATE grad SET drzava = ? WHERE id = ?");
+                upit.setInt(1, sljedeciIDDrzava);
+                upit.setInt(2, sljedeciIDGrad);
+                upit.executeUpdate();
             }
-            result.close();
-            resultTwo.close();
-            tempResult.close();
-        } catch (SQLException ignored) {
-            System.out.println("Greska");
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
         }
     }
 
-    public void dodajDrzavu( Drzava d ) {
-        try{
-            query = conn.prepareStatement("SELECT id FROM drzava WHERE id = " + d.getId() );
-            ResultSet redovi = query.executeQuery();
-            if( redovi.getFetchSize() != 0 ) return; //Drzava vec postoji
-            Grad dGlavniGrad = d.getGrad();
-            query = conn.prepareStatement("SELECT id FROM grad WHERE id = " + dGlavniGrad.getId() );
-            redovi = query.executeQuery();
-            if( redovi.getFetchSize() == 0 ){
-                query = conn.prepareStatement("INSERT INTO grad VALUES (?,?,?,NULL)");
-                query.setInt(1, dGlavniGrad.getId() );
-                query.setString(2, dGlavniGrad.getNaziv() );
-                query.setInt(3, dGlavniGrad.getBrojStanovnika() );
-                query.executeQuery();
-                query = conn.prepareStatement("INSERT INTO drzava VALUES (?,?,?)");
-                query.setInt(1,d.getId() );
-                query.setString(1,d.getNaziv() );
-                query.setInt(3, dGlavniGrad.getId() );
-                query.executeQuery();
-                query = conn.prepareStatement("UPDATE grad SET id = " + d.getId() );
-            }
-            else{
-                query = conn.prepareStatement("SELECT id FROM grad WHERE id = " + dGlavniGrad.getId() );
-                redovi = query.executeQuery();
-                int drzavaId = -1;
-                while( redovi.next() ){
-                    drzavaId = redovi.getInt(1);
-                }
-                query = conn.prepareStatement("INSERT INTO drzava VALUES (?,?,?)");
-                query.setInt(1,d.getId() );
-                query.setString(2,d.getNaziv() );
-                query.setInt(3,drzavaId );
-                query.executeQuery();
-            }
-        }catch ( SQLException e ){
-            System.out.println( e.getMessage() );
-        }
-    }
 
-    ArrayList<Grad> gradovi() {
-        ArrayList<Grad> gradoviUBazi = new ArrayList<>();
+    public void dodajDrzavu(Drzava drzava) {
+
         try {
-            query = conn.prepareStatement("SELECT * FROM grad ORDER BY brojStanovnika DESC");
-            ResultSet result = query.executeQuery();
+            upit = conn.prepareStatement("SELECT id FROM grad WHERE naziv = ?");
+            upit.setString(1, drzava.getGlavniGrad().getNaziv());
+            ResultSet result = upit.executeQuery();
+            int brojac = 0;
+            int idGrada = 0;
             while (result.next()) {
-                Grad grad = new Grad();
-                Drzava d = new Drzava();
-                int idGrada = result.getInt(1);
-                String nazivGrada = result.getString(2);
-                int brojStanovnika = result.getInt(3);
-                int idDrzave = result.getInt(4);
-                grad.setId(idGrada);
-                grad.setNaziv(nazivGrada);
-                grad.setBrojStanovnika(brojStanovnika);
-                d.setId(idDrzave); //ostali podaci za drzavu su nebitni sad
-                grad.setDrzava(d);
-                gradoviUBazi.add(grad);
+                idGrada = result.getInt(1);
+                brojac++;
             }
-            query = conn.prepareStatement("SELECT * FROM drzava");
-            result = query.executeQuery();
-            while (result.next()) {
-                Drzava d = new Drzava();
-                int idDrzave = result.getInt(1);
-                String nazivDrzave = result.getString(2);
-                d.setId(idDrzave);
-                d.setNaziv(nazivDrzave);
-                int idGlavnogGrada = result.getInt(3);
-                for (Grad grad : gradoviUBazi) {
-                    if (grad.getDrzava().getId() == d.getId()) {
-                        grad.setDrzava(d);
-                    }
-                    if (idGlavnogGrada == grad.getId()) {
-                        d.setGrad(grad);
-                    }
-                }
+            int sljedeciIDDrzava = dajSljedeciID("drzava");
+            upit = conn.prepareStatement("INSERT INTO drzava VALUES (?, ?, ?)");
+            upit.setInt(1, sljedeciIDDrzava);
+            upit.setString(2, drzava.getNaziv());
+            if (brojac == 0)
+                upit.setNull(3, Types.INTEGER);
+            else
+                upit.setInt(3, idGrada);
+            upit.executeUpdate();
+            if (brojac == 0) {
+                int sljedeciIDGrad = dajSljedeciID("grad");
+                upit = conn.prepareStatement("INSERT INTO grad VALUES (?, ?, NULL, ?)");
+                upit.setInt(1, sljedeciIDGrad);
+                upit.setString(2, drzava.getGlavniGrad().getNaziv());
+                upit.setInt(3, sljedeciIDDrzava);
+                upit.executeUpdate();
+                upit = conn.prepareStatement("UPDATE drzava SET glavni_grad = ? WHERE id = ?");
+                upit.setInt(1, sljedeciIDGrad);
+                upit.setInt(2, sljedeciIDDrzava);
+                upit.executeUpdate();
             }
-        } catch (SQLException ignored) {
-            return null;
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
         }
-        return gradoviUBazi;
     }
 
-    private void dodajPodatke(){
-        gradovi.add( new Grad(1,"Moscow",3500000, null ));
-        gradovi.add( new Grad(2,"Paris",1000000, null ));
-        gradovi.add( new Grad(3,"Istanbul",2400000, null ));
-        gradovi.add( new Grad(4,"Madrid",3000000, null ));
-        gradovi.add( new Grad(5,"Wien",1500000, null ));
-        drzave.add( new Drzava( 1, "Russia", gradovi.get(0) ));
-        drzave.add( new Drzava( 2, "France", gradovi.get(1) ));
-        drzave.add( new Drzava( 3, "Turkey", gradovi.get(2) ));
-        drzave.add( new Drzava( 4, "Spain", gradovi.get(3) ));
-        drzave.add( new Drzava( 5, "Austria", gradovi.get(4) ));
-        gradovi.get(0).setDrzava(drzave.get(0));
-        gradovi.get(1).setDrzava(drzave.get(1));
-        gradovi.get(2).setDrzava(drzave.get(2));
-        gradovi.get(3).setDrzava(drzave.get(3));
-        gradovi.get(4).setDrzava(drzave.get(4));
+    public void izmijeniGrad(Grad grad) {
+        try {
+            upit = conn.prepareStatement("UPDATE grad SET naziv = ?, broj_stanovnika = ?, drzava = ? WHERE id = ?");
+            upit.setString(1, grad.getNaziv());
+            upit.setInt(2, grad.getBrojStanovnika());
+            upit.setInt(3, grad.getDrzava().getId());
+            upit.setInt(4, grad.getId());
+            int broj = upit.executeUpdate();
+            System.out.println("Uspjesno izmjenjen " + broj + " red");
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
+        }
     }
 
-
+    public void izmijeniDrzava(Drzava drzava) {
+        try {
+            upit = conn.prepareStatement("UPDATE drzava SET naziv = ?, glavni_grad = ? WHERE id = ?");
+            upit.setString(1, drzava.getNaziv());
+            upit.setInt(2, drzava.getGlavniGrad().getId());
+            upit.setInt(3, drzava.getId());
+            int broj = upit.executeUpdate();
+            System.out.println("Uspjesno izmjenjen " + broj + " red");
+        } catch (SQLException greska) {
+            System.out.println(greska.getMessage());
+        }
+    }
 }
